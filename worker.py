@@ -76,7 +76,6 @@ worker2_repair = [
 
 
 class Worker(pygame.sprite.Sprite):
-
     def __init__(self, ready, run_left, run_right, dig, repair, x):
         super().__init__()
 
@@ -116,7 +115,7 @@ class Worker(pygame.sprite.Sprite):
             self.image = self.run_left_sprites[self.index]
 
         # Animation running to wall
-        if self.time > 100 and self.dig == False and self.run_right == True and self.repair == False:
+        elif self.time > 100 and self.dig == False and self.run_right == True and self.repair == False:
             self.tic += 1
             if self.tic == 6:
                 self.index += 1
@@ -129,22 +128,26 @@ class Worker(pygame.sprite.Sprite):
 
         # Animation for Digging
         if self.dig == True:
+            self.repair = False
+            self.run_right = False
+            self.run_left = False
             self.tic += 1
             if self.tic == 6:
                 self.index += 1
                 self.tic = 0
             if self.index >= len(self.dig_sprites):
                 self.index = 0
-
             self.image = self.dig_sprites[self.index]
 
         # Animation for Repairing
-        if self.repair == True:
+        elif self.repair == True:
+            self.dig = False
+            self.run_left = False
+            self.run_right = False
             self.tic += 1
             if self.tic == 6:
                 self.index += 1
                 self.tic = 0
             if self.index >= len(self.repair_sprites):
                 self.index = 0
-
             self.image = self.repair_sprites[self.index]

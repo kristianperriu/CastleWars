@@ -52,12 +52,12 @@ blue_tower = Building(pygame.image.load('images/player2/building/tower.png'), 10
 blue_wall = Building(pygame.image.load('images/player2/building/wall.png'), 1000 - WALL_POS,
                      SCREEN_HEIGHT - GROUND_HEIGHT)
 
-blue_mines_group = pygame.sprite.Group(red_mine)
-red_mines_group = pygame.sprite.Group(blue_mine)
-blue_barracks_group = pygame.sprite.Group(red_barracks)
-red_barracks_group = pygame.sprite.Group(blue_barracks)
-blue_wall_group = pygame.sprite.Group(red_wall)
-red_walls_group = pygame.sprite.Group(blue_wall)
+red_mines_group = pygame.sprite.Group(red_mine)
+blue_mines_group = pygame.sprite.Group(blue_mine)
+red_barracks_group = pygame.sprite.Group(red_barracks)
+blue_barracks_group = pygame.sprite.Group(blue_barracks)
+red_wall_group = pygame.sprite.Group(red_wall)
+blue_walls_group = pygame.sprite.Group(blue_wall)
 blue_tower_group = pygame.sprite.Group(blue_tower)
 red_towers_group = pygame.sprite.Group(red_tower)
 
@@ -76,12 +76,12 @@ def group_display_update():
     # display the buildings for player 2
     blue_tower_group.update()
     blue_tower_group.draw(screen)
-    blue_wall_group.update()
-    blue_wall_group.draw(screen)
-    blue_barracks_group.update()
-    blue_barracks_group.draw(screen)
-    blue_mines_group.update()
-    blue_mines_group.draw(screen)
+    red_wall_group.update()
+    red_wall_group.draw(screen)
+    red_barracks_group.update()
+    red_barracks_group.draw(screen)
+    red_mines_group.update()
+    red_mines_group.draw(screen)
 
     # display the arrows for player 2
     red_archer_arrows.update()
@@ -100,12 +100,12 @@ def group_display_update():
     # display the buildings for player 1
     red_towers_group.update()
     red_towers_group.draw(screen)
-    red_walls_group.update()
-    red_walls_group.draw(screen)
-    red_barracks_group.update()
-    red_barracks_group.draw(screen)
-    red_mines_group.update()
-    red_mines_group.draw(screen)
+    blue_walls_group.update()
+    blue_walls_group.draw(screen)
+    blue_barracks_group.update()
+    blue_barracks_group.draw(screen)
+    blue_mines_group.update()
+    blue_mines_group.draw(screen)
 
     # display the armies for player 1
     blue_swordsmen_army.update()
@@ -198,20 +198,21 @@ def workers_collision(workers, mine, wall, player):
                 if data['p1_resources'] >= 200:
                     data['p1_resources'] = 200
                     return data['p1_resources']
-            else:
+            elif player == 2:
                 data['p2_resources'] += WORKER_PROD / 100
                 if data['p2_resources'] >= 200:
                     data['p2_resources'] = 200
                     return data['p2_resources']
+
         # worker collision to wall
-        if pygame.sprite.spritecollideany(worker, wall):
+        elif pygame.sprite.spritecollideany(worker, wall):
             worker.repair = True
             if player == 1:
                 data['p1_wallhealth'] += WORKER_REPAIR / 100
                 if data['p1_wallhealth'] >= 1000:
                     data['p1_wallhealth'] = 1000
                     return data['p1_wallhealth']
-            else:
+            elif player == 2:
                 data['p2_wallhealth'] += WORKER_PROD / 100
                 if data['p2_wallhealth'] >= 1000:
                     data['p2_wallhealth'] = 1000
@@ -257,7 +258,8 @@ def swordsmen_collision(friendly_swordsmen, enemy_swordsmen, enemy_walls, enemy_
 
 
 # archer collision
-def archer_collision(archers, enemy_archers, enemy_swordsmen, archer_arrows, arrow, enemy_walls, wall_health):
+def archer_collision(archers, enemy_archers, enemy_swordsmen, archer_arrows, arrow, enemy_walls, player):
+    global data
     # archer attacking enemy armies
     for archer in archers:
         if archer.rect.x >= WALL_POS:
@@ -308,8 +310,15 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, archer_arrows, arr
         # arrow damaging enemy wall
         enemy_wall_collision = pygame.sprite.spritecollideany(arrow, enemy_walls)
         if enemy_wall_collision:
-            wall_health -= ARCHER_HIT
-            arrow.kill()
+            if player == 1:
+                data['p2_wallhealth'] -= ARCHER_HIT
+                arrow.kill()
+                return data['p2_wallhealth']
+            else:
+                data['p1_wallhealth'] -= ARCHER_HIT
+                arrow.kill()
+                return data['p1_wallhealth']
+
         # arrow damaging enemy archers
         enemy_archer_collision = pygame.sprite.spritecollideany(arrow, enemy_archers)
         if enemy_archer_collision:
@@ -370,7 +379,7 @@ while True:
                     data['p1_resources'] -= SWORD_COST
                 if event.key == pygame.K_q and data['p1_resources'] >= WORKER_COST:
                     red_worker = Worker(worker1_ready, worker1_run_left, worker1_run_right, worker1_dig, worker1_repair,
-                                        r(75, 147))
+                                        r(75, 130))
                     red_workers_army.add(red_worker)
                     data['p1_resources'] -= WORKER_COST
                 if event.key == pygame.K_e and data['p1_resources'] >= ARCHER_COST and len(red_archers_army) < 30:
@@ -393,23 +402,24 @@ while True:
                 # Worker movement
                 if event.key == pygame.K_a:
                     for red_worker in red_workers_army:
-                        if red_worker.run_right == False:
+                        if not red_worker.run_right:
                             red_worker.run_left = True
 
                 if event.key == pygame.K_s:
                     for red_worker in red_workers_army:
-                        if red_worker.run_left == False:
+                        if not red_worker.run_left:
                             red_worker.run_right = True
+
                 # Spawning P2 Units
                 if event.key == pygame.K_o and data['p2_resources'] >= SWORD_COST and len(blue_swordsmen_army) < 30:
-                    blue_sowrdsman = Swordsman(swordsman2_ready, swordsman2_run, swordsman2_attack, swordsman2_dead,
+                    blue_swordsman = Swordsman(swordsman2_ready, swordsman2_run, swordsman2_attack, swordsman2_dead,
                                                1000 - r(55, 157), 2)
-                    blue_swordsmen_army.add(blue_sowrdsman)
+                    blue_swordsmen_army.add(blue_swordsman)
                     data['p2_resources'] -= SWORD_COST
                 if event.key == pygame.K_p and data['p2_resources'] >= WORKER_COST:
                     blue_worker = Worker(worker2_ready, worker2_run_left, worker2_run_right, worker2_dig,
                                          worker2_repair,
-                                         1000 - randint(75, 137))
+                                         1000 - randint(75, 130))
                     blue_workers_army.add(blue_worker)
                     data['p2_resources'] -= WORKER_COST
                 if event.key == pygame.K_i and data['p2_resources'] >= ARCHER_COST and len(blue_archers_army) < 30:
@@ -433,24 +443,24 @@ while True:
                 # Worker movement
                 if event.key == pygame.K_k:
                     for blue_worker in blue_workers_army:
-                        if blue_worker.run_right == False:
+                        if not blue_worker.run_right:
                             blue_worker.run_left = True
                 if event.key == pygame.K_l:
                     for blue_worker in blue_workers_army:
-                        if blue_worker.run_left == False:
+                        if not blue_worker.run_left:
                             blue_worker.run_right = True
 
         if data['p1_wallhealth'] <= 0 or data['p2_wallhealth'] <= 0:
             game_active = False
 
-        swordsmen_collision(red_swordsmen_army, blue_swordsmen_army, red_walls_group, blue_archers_army, 2)
-        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, blue_wall_group, red_archers_army, 1)
+        swordsmen_collision(red_swordsmen_army, blue_swordsmen_army, blue_walls_group, blue_archers_army, 2)
+        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_wall_group, red_archers_army, 1)
 
-        # archer_collision(archers1_army, archers2_army, swordsmen2_army, archer_arrows1, Arrow(a_arrow1, archer1.rect.x, "archer", 0, 0), walls2_building, data['p2_wallhealth'])
-        # archer_collision(archers2_army, archers1_army, swordsmen1_army, archer_arrows2, Arrow(a_arrow1, archer2.rect.x, "archer", 0, 0), walls1_building, data['p1_wallhealth'])
+        # archer_collision(archers1_army, archers2_army, swordsmen2_army, archer_arrows1, Arrow(a_arrow1, archer1.rect.x, "archer", 0, 0), walls2_building, 1)
+        # archer_collision(archers2_army, archers1_army, swordsmen1_army, archer_arrows2, Arrow(a_arrow1, archer2.rect.x, "archer", 0, 0), walls1_building, 2)
 
-        workers_collision(red_workers_army, blue_mines_group, blue_wall_group, 1)
-        workers_collision(blue_workers_army, red_mines_group, red_walls_group, 2)
+        workers_collision(red_workers_army, red_mines_group, red_wall_group, 1)
+        workers_collision(blue_workers_army, blue_mines_group, blue_walls_group, 2)
 
         # Background
         screen.blit(background, (0, 0))
