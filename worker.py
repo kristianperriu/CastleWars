@@ -86,7 +86,6 @@ class Worker(pygame.sprite.Sprite):
         self.dig_sprites = dig
         self.repair_sprites = repair
         self.x = x
-
         self.image = self.ready
         self.rect = self.image.get_rect(midbottom=(self.x, 250 - GROUND_HEIGHT))
         # Phase
@@ -94,7 +93,6 @@ class Worker(pygame.sprite.Sprite):
         self.run_right = False
         self.dig = False
         self.repair = False
-
         self.tic = 0
         self.index = 0
         self.time = 0

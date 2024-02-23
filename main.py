@@ -4,6 +4,7 @@ from worker import *
 from archer import *
 from random import randint as r
 from building import *
+from arrows import *
 import pygame
 
 pygame.init()
@@ -32,7 +33,7 @@ red_workers_army = pygame.sprite.Group()
 blue_workers_army = pygame.sprite.Group()
 
 red_archer_arrows = pygame.sprite.Group()
-blue_archers_arrow = pygame.sprite.Group()
+blue_archer_arrows = pygame.sprite.Group()
 red_tower_arrows = pygame.sprite.Group()
 blue_tower_arrows = pygame.sprite.Group()
 
@@ -56,7 +57,7 @@ red_mines_group = pygame.sprite.Group(red_mine)
 blue_mines_group = pygame.sprite.Group(blue_mine)
 red_barracks_group = pygame.sprite.Group(red_barracks)
 blue_barracks_group = pygame.sprite.Group(blue_barracks)
-red_wall_group = pygame.sprite.Group(red_wall)
+red_walls_group = pygame.sprite.Group(red_wall)
 blue_walls_group = pygame.sprite.Group(blue_wall)
 blue_tower_group = pygame.sprite.Group(blue_tower)
 red_towers_group = pygame.sprite.Group(red_tower)
@@ -76,8 +77,8 @@ def group_display_update():
     # display the buildings for player 2
     blue_tower_group.update()
     blue_tower_group.draw(screen)
-    red_wall_group.update()
-    red_wall_group.draw(screen)
+    red_walls_group.update()
+    red_walls_group.draw(screen)
     red_barracks_group.update()
     red_barracks_group.draw(screen)
     red_mines_group.update()
@@ -116,8 +117,8 @@ def group_display_update():
     blue_workers_army.draw(screen)
 
     # display the arrows for player 1
-    blue_archers_arrow.update()
-    blue_archers_arrow.draw(screen)
+    blue_archer_arrows.update()
+    blue_archer_arrows.draw(screen)
     blue_tower_arrows.update()
     blue_tower_arrows.draw(screen)
 
@@ -194,29 +195,25 @@ def workers_collision(workers, mine, wall, player):
         if pygame.sprite.spritecollideany(worker, mine):
             worker.dig = True
             if player == 1:
-                data['p1_resources'] += WORKER_PROD / 100
+                data['p1_resources'] += WORKER_PROD / 20
                 if data['p1_resources'] >= 200:
                     data['p1_resources'] = 200
                     return data['p1_resources']
             elif player == 2:
-                data['p2_resources'] += WORKER_PROD / 100
+                data['p2_resources'] += WORKER_PROD / 20
                 if data['p2_resources'] >= 200:
                     data['p2_resources'] = 200
                     return data['p2_resources']
 
+    for worker in workers:
         # worker collision to wall
-        elif pygame.sprite.spritecollideany(worker, wall):
+        if pygame.sprite.spritecollideany(worker, wall):
             worker.repair = True
             if player == 1:
                 data['p1_wallhealth'] += WORKER_REPAIR / 100
-                if data['p1_wallhealth'] >= 1000:
-                    data['p1_wallhealth'] = 1000
-                    return data['p1_wallhealth']
+
             elif player == 2:
                 data['p2_wallhealth'] += WORKER_PROD / 100
-                if data['p2_wallhealth'] >= 1000:
-                    data['p2_wallhealth'] = 1000
-                    return data['p1_wallhealth']
 
 
 # swordsmen collision
@@ -258,7 +255,7 @@ def swordsmen_collision(friendly_swordsmen, enemy_swordsmen, enemy_walls, enemy_
 
 
 # archer collision
-def archer_collision(archers, enemy_archers, enemy_swordsmen, archer_arrows, arrow, enemy_walls, player):
+def archer_collision(archers, enemy_archers, enemy_swordsmen, enemy_walls, archer_arrows, a_arrow, player):
     global data
     # archer attacking enemy armies
     for archer in archers:
@@ -274,8 +271,8 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, archer_arrows, arr
                     if archer_range1 <= ARCHER_RANGE:
                         archer.shoot = True
                         archer.unleash = False
-                        if archer.index == 1:
-                            archer_arrows.add(arrow)
+                        if archer.index == 3:
+                            archer_arrows.add(Archer_Arrow(a_arrow1, archer.rect.x, player))
                         break
                     else:
                         archer.shoot = False
@@ -287,19 +284,19 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, archer_arrows, arr
                         archer.shoot = True
                         archer.unleash = False
                         if archer.index == 1:
-                            archer_arrows.add(arrow)
+                            archer_arrows.add(Archer_Arrow(a_arrow, archer.rect.x, player))
                         break
                     else:
                         archer.shoot = False
                         archer.unleash = True
 
-                # archer attacking  enemy wall
-                if archer.rect.x >= 1000 - WALL_POS - ARCHER_RANGE:
-                    archer.unleash = False
-                    archer.shoot = True
-                    if archer.index == 1:
-                        archer_arrows.add(arrow)
-                    break
+                # archer attacking enemy walls
+                # if archer.rect.x >= 1000 - WALL_POS - ARCHER_RANGE:
+                #     archer.unleash = False
+                #     archer.shoot = True
+                #     if archer.index == 1:
+                #         archer_arrows.add(Arrow(a_arrow, archer.rect.x, "archer", ARROW_SPEED, 0, player))
+                #     break
 
     for arrow in archer_arrows:
         # arrow damaging enemy swordsmen
@@ -334,7 +331,7 @@ def tower_shooting(towers, tower_arrows, enemy_swordsmen, enemy_archers):
             if archer.rect.x in range(370, 385):
                 if tower.shoot == False:
                     tower.shoot = True
-                    tower_arrows.add(TowerArrow1(t_arrow1))
+                    tower_arrows.add(Archer_Arrow(t_arrow1, WALL_POS, 'tower', ARROW_SPEED, ARROW_SPEED, 1))
                 break
         for swordsman in enemy_swordsmen:
             if swordsman.rect.x in range(430, 450):
@@ -383,7 +380,7 @@ while True:
                     red_workers_army.add(red_worker)
                     data['p1_resources'] -= WORKER_COST
                 if event.key == pygame.K_e and data['p1_resources'] >= ARCHER_COST and len(red_archers_army) < 30:
-                    red_archer = Archer(archer1_ready, archer1_run, archer1_shoot, archer1_dead, r(65, 167))
+                    red_archer = Archer(archer1_ready, archer1_run, archer1_shoot, archer1_dead, r(65, 167), 1)
                     red_archers_army.add(red_archer)
                     data['p1_resources'] -= ARCHER_COST
                 # Unleash P1 Units separately
@@ -424,7 +421,7 @@ while True:
                     data['p2_resources'] -= WORKER_COST
                 if event.key == pygame.K_i and data['p2_resources'] >= ARCHER_COST and len(blue_archers_army) < 30:
                     blue_archer = Archer(archer2_ready, archer2_run, archer2_shoot, archer2_dead,
-                                         1000 - randint(65, 167))
+                                         1000 - randint(65, 167), 2)
                     blue_archers_army.add(blue_archer)
                     data['p2_resources'] -= ARCHER_COST
                 # Unleash P1 Units separately
@@ -450,16 +447,23 @@ while True:
                         if not blue_worker.run_left:
                             blue_worker.run_right = True
 
+        # stabilize max wall health
+        if data['p1_wallhealth'] >= 1000:
+            data['p1_wallhealth'] = 1000
+
+        if data['p2_wallhealth'] >= 1000:
+            data['p2_wallhealth'] = 1000
+
         if data['p1_wallhealth'] <= 0 or data['p2_wallhealth'] <= 0:
             game_active = False
 
         swordsmen_collision(red_swordsmen_army, blue_swordsmen_army, blue_walls_group, blue_archers_army, 2)
-        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_wall_group, red_archers_army, 1)
+        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_walls_group, red_archers_army, 1)
 
-        # archer_collision(archers1_army, archers2_army, swordsmen2_army, archer_arrows1, Arrow(a_arrow1, archer1.rect.x, "archer", 0, 0), walls2_building, 1)
-        # archer_collision(archers2_army, archers1_army, swordsmen1_army, archer_arrows2, Arrow(a_arrow1, archer2.rect.x, "archer", 0, 0), walls1_building, 2)
+        archer_collision(red_archers_army, blue_archers_army, blue_swordsmen_army, blue_walls_group, red_archer_arrows, a_arrow1, 1)
+        archer_collision(blue_archers_army, red_archers_army, red_swordsmen_army, red_walls_group, blue_archer_arrows, a_arrow2, 2)
 
-        workers_collision(red_workers_army, red_mines_group, red_wall_group, 1)
+        workers_collision(red_workers_army, red_mines_group, red_walls_group, 1)
         workers_collision(blue_workers_army, blue_mines_group, blue_walls_group, 2)
 
         # Background
@@ -489,7 +493,7 @@ while True:
                     red_swordsmen_army.empty()
                     blue_swordsmen_army.empty()
                     red_archer_arrows.empty()
-                    blue_archers_arrow.empty()
+                    blue_archer_arrows.empty()
                     red_tower_arrows.empty()
                     blue_tower_arrows.empty()
         screen.blit(menu_screen, (0, 0))

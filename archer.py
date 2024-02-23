@@ -42,7 +42,10 @@ archer2_run = [pygame.image.load('images/player2/bow/run-0.png'),
                pygame.image.load('images/player2/bow/run-11.png')]
 
 archer2_shoot = [pygame.image.load('images/player2/bow/shoot-0.png'),
-                 pygame.image.load('images/player2/bow/shoot-1.png')]
+                 pygame.image.load('images/player2/bow/shoot-1.png'),
+                 pygame.image.load('images/player2/bow/shoot-0.png'),
+                 pygame.image.load('images/player2/bow/shoot-1.png')
+                 ]
 
 archer2_dead = [pygame.image.load('images/player2/bow/fallen-0.png'),
                 pygame.image.load('images/player2/bow/fallen-1.png'),
@@ -53,7 +56,7 @@ archer2_dead = [pygame.image.load('images/player2/bow/fallen-0.png'),
 
 
 class Archer(pygame.sprite.Sprite):
-    def __init__(self, ready, run, shoot, dead, x):
+    def __init__(self, ready, run, shoot, dead, x, player):
         super().__init__()
 
         # Attributes
@@ -62,6 +65,7 @@ class Archer(pygame.sprite.Sprite):
         self.shoot_sprites = shoot
         self.dead_sprites = dead
         self.x = x
+        self.player = player
         self.image = self.ready
         self.rect = self.image.get_rect(midbottom=(x - 10, 250 - GROUND_HEIGHT))
         self.health = ARCHER_HEALTH
@@ -73,6 +77,7 @@ class Archer(pygame.sprite.Sprite):
         self.time = 0
 
     def update(self):
+        # archer dying
         if self.health <= 0:
             self.tic += 1
             if self.tic >= 6:
@@ -86,7 +91,7 @@ class Archer(pygame.sprite.Sprite):
         elif self.time < ARCHER_TRAIN:
             self.time += 1
         else:
-            # do running Animation
+            # running animation
             if self.unleash:
                 self.tic += 1
                 if self.tic >= 6:
@@ -95,8 +100,12 @@ class Archer(pygame.sprite.Sprite):
                 if self.index >= len(self.run_sprites):
                     self.index = 0
                 self.image = self.run_sprites[int(self.index)]
-                self.rect.x += ARCHER_SPEED
+                if self.player == 1:
+                    self.rect.x += ARCHER_SPEED
+                else:
+                    self.rect.x -= ARCHER_SPEED
                 # do attacking animation
+            # shooting animation
             elif self.shoot:
                 self.tic += 1
                 if self.tic >= 6:
