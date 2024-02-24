@@ -53,15 +53,6 @@ blue_tower = Building(pygame.image.load('images/player2/building/tower.png'), 10
 blue_wall = Building(pygame.image.load('images/player2/building/wall.png'), 1000 - WALL_POS,
                      SCREEN_HEIGHT - GROUND_HEIGHT)
 
-red_mines_group = pygame.sprite.Group(red_mine)
-blue_mines_group = pygame.sprite.Group(blue_mine)
-red_barracks_group = pygame.sprite.Group(red_barracks)
-blue_barracks_group = pygame.sprite.Group(blue_barracks)
-red_walls_group = pygame.sprite.Group(red_wall)
-blue_walls_group = pygame.sprite.Group(blue_wall)
-blue_tower_group = pygame.sprite.Group(blue_tower)
-red_towers_group = pygame.sprite.Group(red_tower)
-
 
 def menu_display():
     game_title_surf = title_font.render('CastleWars', False, 'Black')
@@ -75,14 +66,10 @@ def menu_display():
 
 def group_display_update():
     # display the buildings for player 2
-    blue_tower_group.update()
-    blue_tower_group.draw(screen)
-    red_walls_group.update()
-    red_walls_group.draw(screen)
-    red_barracks_group.update()
-    red_barracks_group.draw(screen)
-    red_mines_group.update()
-    red_mines_group.draw(screen)
+    blue_mine.draw(screen)
+    blue_barracks.draw(screen)
+    blue_tower.draw(screen)
+    blue_wall.draw(screen)
 
     # display the arrows for player 2
     red_archer_arrows.update()
@@ -98,15 +85,12 @@ def group_display_update():
     red_workers_army.update()
     red_workers_army.draw(screen)
 
+
     # display the buildings for player 1
-    red_towers_group.update()
-    red_towers_group.draw(screen)
-    blue_walls_group.update()
-    blue_walls_group.draw(screen)
-    blue_barracks_group.update()
-    blue_barracks_group.draw(screen)
-    blue_mines_group.update()
-    blue_mines_group.draw(screen)
+    red_mine.draw(screen)
+    red_barracks.draw(screen)
+    red_tower.draw(screen)
+    red_wall.draw(screen)
 
     # display the armies for player 1
     blue_swordsmen_army.update()
@@ -121,6 +105,7 @@ def group_display_update():
     blue_archer_arrows.draw(screen)
     blue_tower_arrows.update()
     blue_tower_arrows.draw(screen)
+
 
 
 def text(data, swordsmen1_army, swordsman2_text, worker1_army, worker2_army, archer1_army, archer2_army):
@@ -192,7 +177,7 @@ def workers_collision(workers, mine, wall, player):
     global data
     for worker in workers:
         # worker collision to mine
-        if pygame.sprite.spritecollideany(worker, mine):
+        if pygame.sprite.collide_rect(mine, worker):
             worker.dig = True
             if player == 1:
                 data['p1_resources'] += WORKER_PROD / 20
@@ -207,7 +192,7 @@ def workers_collision(workers, mine, wall, player):
 
     for worker in workers:
         # worker collision to wall
-        if pygame.sprite.spritecollideany(worker, wall):
+        if pygame.sprite.collide_rect(worker, wall):
             worker.repair = True
             if player == 1:
                 data['p1_wallhealth'] += WORKER_REPAIR / 100
@@ -235,7 +220,7 @@ def swordsmen_collision(friendly_swordsmen, enemy_swordsmen, enemy_walls, enemy_
             if swordsman.index == 3:
                 colliding_arch.health -= SWORD_HIT
         # swordsman attacking enemy wall
-        colliding_wall = pygame.sprite.spritecollideany(swordsman, enemy_walls)
+        colliding_wall = pygame.sprite.collide_rect(swordsman, enemy_walls)
         if colliding_wall:
             swordsman.attacking = True
             swordsman.unleash = False
@@ -259,44 +244,31 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, enemy_walls, arche
     global data
     # archer attacking enemy armies
     for archer in archers:
-        if archer.rect.x >= WALL_POS:
-            if len(enemy_swordsmen) == 0 and len(
-                    enemy_archers) == 0 and archer.rect.x >= WALL_POS and archer.rect.x <= 1000 - WALL_POS:
-                archer.shoot = False
+        # archer attacking enemy soldiers
+        for enemy_soldier in enemy_swordsmen:
+            archer_range1 = abs(enemy_soldier.rect.x - archer.rect.x)
+            if archer_range1 <= ARCHER_RANGE:
+                archer.shoot = True
+                archer.unleash = False
+                if archer.index == 3:
+                    archer_arrows.add(Archer_Arrow(a_arrow1, archer.rect.x, player))
+                break
+            elif enemy_soldier.health <= 0:
                 archer.unleash = True
-            else:
-                # archer attacking enemy soldiers
-                for soldier in enemy_swordsmen:
-                    archer_range1 = abs(soldier.rect.x - archer.rect.x)
-                    if archer_range1 <= ARCHER_RANGE:
-                        archer.shoot = True
-                        archer.unleash = False
-                        if archer.index == 3:
-                            archer_arrows.add(Archer_Arrow(a_arrow1, archer.rect.x, player))
-                        break
-                    else:
-                        archer.shoot = False
-                        archer.unleash = True
-                # archer attacking enemy archers
-                for enemy_archer in enemy_archers:
-                    archer_range2 = abs(enemy_archer.rect.x - archer.rect.x)
-                    if archer_range2 <= ARCHER_RANGE and archer.rect.x <= enemy_archer.rect.x:
-                        archer.shoot = True
-                        archer.unleash = False
-                        if archer.index == 1:
-                            archer_arrows.add(Archer_Arrow(a_arrow, archer.rect.x, player))
-                        break
-                    else:
-                        archer.shoot = False
-                        archer.unleash = True
+                archer.shoot = False
 
-                # archer attacking enemy walls
-                # if archer.rect.x >= 1000 - WALL_POS - ARCHER_RANGE:
-                #     archer.unleash = False
-                #     archer.shoot = True
-                #     if archer.index == 1:
-                #         archer_arrows.add(Arrow(a_arrow, archer.rect.x, "archer", ARROW_SPEED, 0, player))
-                #     break
+        # archer attacking enemy archers
+        for enemy_archer in enemy_archers:
+            archer_range2 = abs(enemy_archer.rect.x - archer.rect.x)
+            if archer_range2 <= ARCHER_RANGE:
+                archer.shoot = True
+                archer.unleash = False
+                if archer.index == 1:
+                    archer_arrows.add(Archer_Arrow(a_arrow, archer.rect.x, player))
+                break
+            elif enemy_archer.health <= 0:
+                archer.unleash = True
+                archer.shoot = False
 
     for arrow in archer_arrows:
         # arrow damaging enemy swordsmen
@@ -324,31 +296,28 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, enemy_walls, arche
 
 
 # tower shooting
-def tower_shooting(towers, tower_arrows, enemy_swordsmen, enemy_archers):
+def tower_shooting(tower, tower_range, arrow, x, tower_arrows, enemy_swordsmen, enemy_archers, player):
     # Tower1 Archer2
-    for tower in towers:
-        for archer in enemy_archers:
-            if archer.rect.x in range(370, 385):
-                if tower.shoot == False:
-                    tower.shoot = True
-                    tower_arrows.add(Archer_Arrow(t_arrow1, WALL_POS, 'tower', ARROW_SPEED, ARROW_SPEED, 1))
-                break
-        for swordsman in enemy_swordsmen:
-            if swordsman.rect.x in range(430, 450):
-                if tower.shoot == False:
-                    tower.shoot = True
-                    tower_arrows.add(TowerArrow1(t_arrow1))
-                break
+    for enemy_archer in enemy_archers:
+        if enemy_archer.rect.x in tower_range:
+            tower_arrows.add(Tower_Arrow(arrow, x, TOWER_HEIGHT, ARROW_SPEED, ARROW_SPEED, player))
+            break
 
-    for arrow in tower_arrows:
-        enemy_archer_collision = pygame.sprite.spritecollideany(arrow, enemy_archers)
-        if enemy_archer_collision:
+    for enemy_swordsman in enemy_swordsmen:
+        if enemy_swordsman.rect.x in tower_range:
+            tower_arrows.add(Tower_Arrow(arrow, x, TOWER_HEIGHT, ARROW_SPEED, ARROW_SPEED, player))
+            break
+
+
+    for tower_arrow in tower_arrows:
+        enemy_archer_collision = pygame.sprite.spritecollideany(tower_arrow, enemy_archers)
+        if enemy_archer_collision or tower_arrow.rect.x <= GROUND_HEIGHT:
             enemy_archer_collision.health -= TOWER_HIT
-            arrow.kill()
-        enemy_swordsmen_collision = pygame.sprite.spritecollideany(arrow, enemy_swordsmen)
-        if enemy_swordsmen_collision:
+            tower_arrow.kill()
+        enemy_swordsmen_collision = pygame.sprite.spritecollideany(tower_arrow, enemy_swordsmen)
+        if enemy_swordsmen_collision or tower_arrow.rect.x <= GROUND_HEIGHT:
             enemy_swordsmen_collision.health -= TOWER_HIT
-            arrow.kill()
+            tower_arrow.kill()
 
 
 # data
@@ -457,16 +426,22 @@ while True:
         if data['p1_wallhealth'] <= 0 or data['p2_wallhealth'] <= 0:
             game_active = False
 
-        swordsmen_collision(red_swordsmen_army, blue_swordsmen_army, blue_walls_group, blue_archers_army, 2)
-        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_walls_group, red_archers_army, 1)
+        swordsmen_collision(red_swordsmen_army, blue_swordsmen_army, blue_wall, blue_archers_army, 2)
+        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_wall, red_archers_army, 1)
 
-        archer_collision(red_archers_army, blue_archers_army, blue_swordsmen_army, blue_walls_group, red_archer_arrows, a_arrow1, 1)
-        archer_collision(blue_archers_army, red_archers_army, red_swordsmen_army, red_walls_group, blue_archer_arrows, a_arrow2, 2)
+        archer_collision(red_archers_army, blue_archers_army, blue_swordsmen_army, blue_wall, red_archer_arrows,
+                         a_arrow1, 1)
+        archer_collision(blue_archers_army, red_archers_army, red_swordsmen_army, red_wall, blue_archer_arrows,
+                         a_arrow2, 2)
 
-        workers_collision(red_workers_army, red_mines_group, red_walls_group, 1)
-        workers_collision(blue_workers_army, blue_mines_group, blue_walls_group, 2)
+        workers_collision(red_workers_army, red_mine, red_wall, 1)
+        workers_collision(blue_workers_army, blue_mine, blue_mine, 2)
+
+        tower_shooting(red_tower, range(WALL_POS+50, WALL_POS+TOWER_RANGE), t_arrow1, WALL_POS, red_tower_arrows, blue_swordsmen_army,
+                       blue_archers_army, 1)
 
         # Background
+        screen.fill("BLACK")
         screen.blit(background, (0, 0))
         screen.blit(ground, (0, 250 - GROUND_HEIGHT))
         screen.blit(ground_below, (0, 250 - GROUND_HEIGHT))
@@ -506,5 +481,7 @@ while True:
             red_surf = screen_font.render("RED WINS!!!", False, "Red")
             red_rect = red_surf.get_rect(center=(500, 125))
             screen.blit(red_surf, red_rect)
+
     pygame.display.update()
+    pygame.display.flip()
     clock.tick(60)

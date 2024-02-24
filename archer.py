@@ -90,6 +90,7 @@ class Archer(pygame.sprite.Sprite):
 
         elif self.time < ARCHER_TRAIN:
             self.time += 1
+
         else:
             # running animation
             if self.unleash:
@@ -104,7 +105,6 @@ class Archer(pygame.sprite.Sprite):
                     self.rect.x += ARCHER_SPEED
                 else:
                     self.rect.x -= ARCHER_SPEED
-                # do attacking animation
             # shooting animation
             elif self.shoot:
                 self.tic += 1

@@ -9,3 +9,6 @@ class Building(pygame.sprite.Sprite):
         self.y = y
         self.image = picture
         self.rect = self.image.get_rect(midbottom=(self.x, self.y))
+
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)

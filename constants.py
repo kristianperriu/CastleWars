@@ -62,7 +62,7 @@ ARCHER_HEALTH = 25  # initial amount of HP of an archer
 ARCHER_HIT = 10     # damage caused by of an arrow shoot by an archer
 ARCHER_POS = BARRACKS_POS
 # Arrow
-ARROW_SPEED = 6  # distance covered in one turn by an arrow
+ARROW_SPEED = 3  # distance covered in one turn by an arrow
 
 ### Buildings constants
 
