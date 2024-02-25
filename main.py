@@ -6,7 +6,6 @@ from random import randint as r
 from building import *
 from arrows import *
 import pygame
-import time
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -174,19 +173,24 @@ def resume():
 # worker collision
 def workers_collision(workers, mine, wall, player):
     global data
+
+    # Check collision between workers and mine
     for worker in workers:
-        # worker collision to mine
         if pygame.sprite.collide_rect(mine, worker):
+            # Worker starts digging
             worker.dig = True
+            # Increase player resources based on player number
             if player == 1:
                 data['p1_resources'] += WORKER_PROD / 20
             elif player == 2:
                 data['p2_resources'] += WORKER_PROD / 20
 
+    # Check collision between workers and wall
     for worker in workers:
-        # worker collision to wall
         if pygame.sprite.collide_rect(worker, wall):
+            # Worker starts repairing the wall
             worker.repair = True
+            # Increase wall health based on player number
             if player == 1:
                 data['p1_wallhealth'] += WORKER_REPAIR / 100
             elif player == 2:
@@ -196,35 +200,43 @@ def workers_collision(workers, mine, wall, player):
 # swordsmen collision
 def swordsmen_collision(friendly_swordsmen, enemy_swordsmen, enemy_walls, enemy_archers, player):
     global data
+
+    # Loop through each friendly swordsman
     for swordsman in friendly_swordsmen:
-        # swordsman attacking enemy swordsman
+        # Check for collision with enemy swordsman
         colliding_sword = pygame.sprite.spritecollideany(swordsman, enemy_swordsmen)
         if colliding_sword:
             swordsman.attacking = True
             swordsman.unleash = False
+            # If swordsman is index is 3 (able to attack)
             if swordsman.index == 3:
+                # Decrease enemy swordsman health
                 colliding_sword.health -= SWORD_HIT
-        # swordsman attacking enemy archer
+
+        # Check for collision with enemy archer
         colliding_arch = pygame.sprite.spritecollideany(swordsman, enemy_archers)
         if colliding_arch:
             swordsman.attacking = True
             swordsman.unleash = False
+            # If swordsman index is 3 (able to attack)
             if swordsman.index == 3:
+                # Decrease enemy archer health
                 colliding_arch.health -= SWORD_HIT
-        # swordsman attacking enemy wall
+
+        # Check for collision with enemy wall
         colliding_wall = pygame.sprite.collide_rect(swordsman, enemy_walls)
         if colliding_wall:
             swordsman.attacking = True
             swordsman.unleash = False
+            # If swordsman index is 3 (able to attack)
             if swordsman.index == 3:
+                # Decrease enemy wall health based on player
                 if player == 1:
                     data['p1_wallhealth'] -= SWORD_HIT
-                    return data['p1_wallhealth']
                 else:
                     data['p2_wallhealth'] -= SWORD_HIT
-                    return data['p2_wallhealth']
 
-        # restrictions for running
+        # Restrictions for movement
         if not (colliding_sword or colliding_arch or colliding_wall) and (
                 swordsman.rect.x >= WALL_POS and swordsman.rect.x <= 1000 - WALL_POS):
             swordsman.attack = False
@@ -232,7 +244,6 @@ def swordsmen_collision(friendly_swordsmen, enemy_swordsmen, enemy_walls, enemy_
 
 
 # archer collision
-ARCHER_SHOOT_COOLDOWN = 30
 
 # Initialize the archer shoot cooldown
 archer_shoot_cooldown = 0
@@ -240,22 +251,23 @@ archer_shoot_cooldown = 0
 
 def archer_collision(archers, enemy_archers, enemy_swordsmen, enemy_walls, archer_arrows, a_arrow, player):
     global archer_shoot_cooldown
-
+    # Check if archer can shoot
     if archer_shoot_cooldown <= 0:
         # Iterate over archers
         for archer in archers:
-            # archer attacking enemy soldier
+            # archer attacking enemy soldiers
             for enemy_soldier in enemy_swordsmen:
                 archer_range1 = abs(enemy_soldier.rect.x - archer.rect.x)
                 if archer_range1 <= ARCHER_RANGE:
                     archer.shoot = True
                     archer.unleash = False
-                    if archer.index == 2:
-                        new_arrow = Archer_Arrow(a_arrow1, archer.rect.x, player)
-                        archer_arrows.add(new_arrow)
-                        archer_shoot_cooldown = ARCHER_SHOOT_COOLDOWN
+                    if archer.index >= 1:
+                        archer_arrows.add(Archer_Arrow(a_arrow1, archer.rect.x, player))
+                        # Set shoot cooldown
+                        archer_shoot_cooldown = ARCHER_REST
                     break
-                if enemy_soldier.health <= 0:
+                # If enemy archer is dead or archer has no one in range, allow the archer to move forward
+                if enemy_soldier.health <= 0 or archer_range1 > ARCHER_RANGE:
                     archer.unleash = True
                     archer.shoot = False
 
@@ -263,30 +275,40 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, enemy_walls, arche
             for enemy_archer in enemy_archers:
                 archer_range2 = abs(enemy_archer.rect.x - archer.rect.x)
                 if archer_range2 <= ARCHER_RANGE:
-                    archer.shoot = True
                     archer.unleash = False
-                    if archer.index == 1:
-                        new_arrow = Archer_Arrow(a_arrow, archer.rect.x, player)
-                        archer_arrows.add(new_arrow)
-                        archer_shoot_cooldown = ARCHER_SHOOT_COOLDOWN
+                    archer.shoot = True
+                    # Check if index is 1 (able to shoot)
+                    if archer.index >= 1:
+                        # Create a new arrow
+                        archer_arrows.add(Archer_Arrow(a_arrow1, archer.rect.x, player))
+                        # Set shoot cooldown
+                        archer_shoot_cooldown = ARCHER_REST
                     break
-                elif enemy_archer.health <= 0:
+                # If enemy archer is dead or archer has no one in range, allow the archer to move forward
+                if enemy_archer.health <= 0 or archer_range2 > ARCHER_RANGE:
                     archer.unleash = True
                     archer.shoot = False
 
+            # Check if archer can shoot at walls
             archer_range3 = abs(enemy_walls.rect.x + 40 - archer.rect.x)
-            if archer_range3 <= ARCHER_RANGE:
+            if archer_range3 <= ARCHER_RANGE and not archer.shoot:
                 archer.shoot = True
                 archer.unleash = False
-                if archer.index == 1:
-                    new_arrow = Archer_Arrow(a_arrow, archer.rect.x, player)
-                    archer_arrows.add(new_arrow)
-                    archer_shoot_cooldown = ARCHER_SHOOT_COOLDOWN
-                break
+                # Check if index is 2 (able to shoot)
+                if archer.index >= 1:
+                    # Create a new arrow
+                    archer_arrows.add(Archer_Arrow(a_arrow1, archer.rect.x, player))
+                    # Set shoot cooldown
+                    archer_shoot_cooldown = ARCHER_REST
+                # Set shoot cooldown
+                archer_shoot_cooldown = ARCHER_REST
+                break  # Exit the loop if shooting is done
 
+    # Decrease archer shoot cooldown
     if archer_shoot_cooldown > 0:
         archer_shoot_cooldown -= 1
 
+    # Handle collisions of archer arrows with enemies
     for arrow in archer_arrows:
         enemy_swordsman_collision = pygame.sprite.spritecollideany(arrow, enemy_swordsmen)
         if enemy_swordsman_collision:
@@ -294,14 +316,13 @@ def archer_collision(archers, enemy_archers, enemy_swordsmen, enemy_walls, arche
             arrow.kill()
         enemy_wall_collision = pygame.sprite.collide_rect(arrow, enemy_walls)
         if enemy_wall_collision:
+            # Decrease wall health if hit by an arrow
             if player == 1:
                 data['p2_wallhealth'] -= ARCHER_HIT
                 arrow.kill()
-                return data['p2_wallhealth']
             else:
                 data['p1_wallhealth'] -= ARCHER_HIT
                 arrow.kill()
-                return data['p1_wallhealth']
         enemy_archer_collision = pygame.sprite.spritecollideany(arrow, enemy_archers)
         if enemy_archer_collision:
             enemy_archer_collision.health -= ARCHER_HIT
@@ -315,57 +336,59 @@ tower_shoot_cooldown = 0
 
 def tower_shooting(arrow, tower_x_position, tower_arrows, enemy_swordsmen, enemy_archers, player):
     global tower_shoot_cooldown
-
+    # Check if tower can shoot
     if tower_shoot_cooldown <= 0:
-        # Find the nearest enemy troop
+        # Find the nearest enemy to the tower
         nearest_enemy = None
         min_distance = float('inf')
-
-        # Iterate over enemy archers
+        # Check for nearest enemy archer
         for enemy_archer in enemy_archers:
             tower_range1 = abs(tower_x_position - enemy_archer.rect.x)
             if tower_range1 <= TOWER_RANGE and tower_range1 < min_distance:
                 nearest_enemy = enemy_archer
                 min_distance = tower_range1
-
-        # Iterate over enemy swordsmen
+        # Check for nearest enemy swordsman
         for enemy_swordsman in enemy_swordsmen:
             tower_range2 = abs(tower_x_position - enemy_swordsman.rect.x)
             if tower_range2 <= TOWER_RANGE and tower_range2 < min_distance:
                 nearest_enemy = enemy_swordsman
                 min_distance = tower_range2
 
-        # If a nearest enemy is found
+        # If there is a nearest enemy, shoot at it
         if nearest_enemy:
-            # Calculate arrow direction towards the nearest enemy
             dx = abs(nearest_enemy.rect.x - tower_x_position)
             dy = abs(nearest_enemy.rect.y - (SCREEN_HEIGHT - TOWER_HEIGHT))
             distance = max(abs(dx), abs(dy))
             arrow_speed_x = (dx / distance) * ARROW_SPEED
             arrow_speed_y = (dy / distance) * ARROW_SPEED
 
-            # Create a new arrow with calculated speed
+            # Create a new arrow aimed at the nearest enemy
             new_arrow = Tower_Arrow(arrow, tower_x_position, SCREEN_HEIGHT - TOWER_HEIGHT, arrow_speed_x, arrow_speed_y,
                                     player)
             tower_arrows.add(new_arrow)
-            tower_shoot_cooldown = TOWER_SHOOT_COOLDOWN
+            tower_shoot_cooldown = TOWER_REST
 
+    # Reduce tower cooldown
     if tower_shoot_cooldown > 0:
         tower_shoot_cooldown -= 1
 
+    # Check for collisions between tower arrows and enemy units
     for tower_arrow in tower_arrows:
-        # Handle collisions with enemy archers and swordsmen
+        # Handle collisions with enemy archers
         enemy_archer_collision = pygame.sprite.spritecollideany(tower_arrow, enemy_archers)
         if enemy_archer_collision:
             enemy_archer_collision.health -= TOWER_HIT
             tower_arrow.kill()
+            # Check if arrow has hit the ground and kill it
             if tower_arrow.rect.y <= SCREEN_HEIGHT - GROUND_HEIGHT:
                 tower_arrow.kill()
 
+        # Handle collisions with enemy swordsmen
         enemy_swordsmen_collision = pygame.sprite.spritecollideany(tower_arrow, enemy_swordsmen)
         if enemy_swordsmen_collision:
             enemy_swordsmen_collision.health -= TOWER_HIT
             tower_arrow.kill()
+            # Check if arrow has hit the ground and kill it
             if tower_arrow.rect.y <= SCREEN_HEIGHT - GROUND_HEIGHT:
                 tower_arrow.kill()
 
@@ -388,33 +411,39 @@ while True:
                 if event.key == pygame.K_SPACE:
                     resume()
                 # Spawning P1 Units
-                if event.key == pygame.K_w and data['p1_resources'] >= SWORD_COST and len(red_swordsmen_army) < 30:
+                if event.key == pygame.K_w and data['p1_resources'] >= SWORD_COST and len(red_swordsmen_army) < 50:
                     red_swordsman = Swordsman(swordsman1_ready, swordsman1_run, swordsman1_attack, swordsmasn1_dead,
                                               r(55, 157), 1)
                     red_swordsmen_army.add(red_swordsman)
                     data['p1_resources'] -= SWORD_COST
+                if event.key == pygame.K_e and data['p1_resources'] >= ARCHER_COST and len(red_archers_army) < 50:
+                    red_archer = Archer(archer1_ready, archer1_run, archer1_shoot, archer1_dead, r(65, 167), 1)
+                    red_archers_army.add(red_archer)
+                    data['p1_resources'] -= ARCHER_COST
                 if event.key == pygame.K_q and data['p1_resources'] >= WORKER_COST:
                     red_worker = Worker(worker1_ready, worker1_run_left, worker1_run_right, worker1_dig, worker1_repair,
                                         r(75, 130))
                     red_workers_army.add(red_worker)
                     data['p1_resources'] -= WORKER_COST
-                if event.key == pygame.K_e and data['p1_resources'] >= ARCHER_COST and len(red_archers_army) < 30:
-                    red_archer = Archer(archer1_ready, archer1_run, archer1_shoot, archer1_dead, r(65, 167), 1)
-                    red_archers_army.add(red_archer)
-                    data['p1_resources'] -= ARCHER_COST
                 # Unleash P1 Units separately
                 if event.key == pygame.K_d:
                     for swordsman in red_swordsmen_army:
-                        swordsman.unleash = True
+                        if swordsman.rect.x < WALL_POS:
+                            swordsman.unleash = True
+                            break
                 if event.key == pygame.K_f:
                     for archer in red_archers_army:
-                        archer.unleash = True
+                        if archer.rect.x < WALL_POS:
+                            archer.unleash = True
+                            break
                 # Unleash P1 Units together
                 if event.key == pygame.K_z:
                     for swordsman in red_swordsmen_army:
-                        swordsman.unleash = True
+                        if swordsman.rect.x < WALL_POS:
+                            swordsman.unleash = True
                     for archer in red_archers_army:
-                        archer.unleash = True
+                        if archer.rect.x < WALL_POS:
+                            archer.unleash = True
                 # Worker movement
                 if event.key == pygame.K_a:
                     for red_worker in red_workers_army:
@@ -427,7 +456,7 @@ while True:
                             red_worker.run_right = True
 
                 # Spawning P2 Units
-                if event.key == pygame.K_o and data['p2_resources'] >= SWORD_COST and len(blue_swordsmen_army) < 30:
+                if event.key == pygame.K_o and data['p2_resources'] >= SWORD_COST and len(blue_swordsmen_army) < 50:
                     blue_swordsman = Swordsman(swordsman2_ready, swordsman2_run, swordsman2_attack, swordsman2_dead,
                                                1000 - r(55, 157), 2)
                     blue_swordsmen_army.add(blue_swordsman)
@@ -438,25 +467,31 @@ while True:
                                          1000 - randint(75, 130))
                     blue_workers_army.add(blue_worker)
                     data['p2_resources'] -= WORKER_COST
-                if event.key == pygame.K_i and data['p2_resources'] >= ARCHER_COST and len(blue_archers_army) < 30:
+                if event.key == pygame.K_i and data['p2_resources'] >= ARCHER_COST and len(blue_archers_army) < 50:
                     blue_archer = Archer(archer2_ready, archer2_run, archer2_shoot, archer2_dead,
                                          1000 - randint(65, 167), 2)
                     blue_archers_army.add(blue_archer)
                     data['p2_resources'] -= ARCHER_COST
-                # Unleash P1 Units separately
+                # Unleash P2 Units separately
                 if event.key == pygame.K_j:
                     for swordsman in blue_swordsmen_army:
-                        swordsman.unleash = True
+                        if swordsman.rect.x > SCREEN_WIDTH - WALL_POS:
+                            swordsman.unleash = True
+                            break
                 if event.key == pygame.K_h:
                     for archer in blue_archers_army:
-                        archer.unleash = True
-                # Unleash P1 Units together
+                        if archer.rect.x > SCREEN_WIDTH - WALL_POS:
+                            archer.unleash = True
+                            break
+                # Unleash P2 Units together
                 if event.key == pygame.K_m:
                     for swordsman in blue_swordsmen_army:
-                        swordsman.unleash = True
+                        if swordsman.rect.x > SCREEN_WIDTH - WALL_POS:
+                            swordsman.unleash = True
                     for archer in blue_archers_army:
-                        archer.unleash = True
-                # Worker movement
+                        if archer.rect.x > SCREEN_WIDTH - WALL_POS:
+                            archer.unleash = True
+                # Worker P2 movement
                 if event.key == pygame.K_k:
                     for blue_worker in blue_workers_army:
                         if not blue_worker.run_right:
@@ -483,18 +518,20 @@ while True:
         if data['p1_wallhealth'] <= 0 or data['p2_wallhealth'] <= 0:
             game_active = False
 
+        # collisions for player 1
         swordsmen_collision(red_swordsmen_army, blue_swordsmen_army, blue_wall, blue_archers_army, 2)
-        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_wall, red_archers_army, 1)
         archer_collision(red_archers_army, blue_archers_army, blue_swordsmen_army, blue_wall, red_archer_arrows,
                          a_arrow1, 1)
+        workers_collision(red_workers_army, red_mine, red_wall, 1)
+        tower_shooting(t_arrow1, WALL_POS, red_tower_arrows, blue_swordsmen_army, blue_archers_army, 1)
+
+        # collisions for player 2
+        swordsmen_collision(blue_swordsmen_army, red_swordsmen_army, red_wall, red_archers_army, 1)
         archer_collision(blue_archers_army, red_archers_army, red_swordsmen_army, red_wall, blue_archer_arrows,
                          a_arrow2, 2)
-
-        workers_collision(red_workers_army, red_mine, red_wall, 1)
         workers_collision(blue_workers_army, blue_mine, blue_wall, 2)
-
-        tower_shooting(t_arrow1, WALL_POS, red_tower_arrows, blue_swordsmen_army, blue_archers_army, 1)
         tower_shooting(t_arrow2, 1000 - WALL_POS, blue_tower_arrows, red_swordsmen_army, red_archers_army, 2)
+
         # Background
         screen.fill("BLACK")
         screen.blit(background, (0, 0))
@@ -502,10 +539,11 @@ while True:
         screen.blit(ground_below, (0, 250 - GROUND_HEIGHT))
         text(data, red_swordsmen_army, blue_swordsmen_army, red_workers_army, blue_workers_army, red_archers_army,
              blue_archers_army)
+
         # Groups draw and update
         group_display_update()
 
-
+    # restarting the game
     elif game_active == False:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -514,6 +552,7 @@ while True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     game_active = True
+                    # resetting everything
                     data = {'p1_resources': INIT_RESOURCES, 'p2_resources': INIT_RESOURCES,
                             'p1_wallhealth': WALL_HEALTH, 'p2_wallhealth': WALL_HEALTH}
                     red_workers_army.empty()

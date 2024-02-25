@@ -57,8 +57,8 @@ ARCHER_COST = 25  # amount of resources to train a new archer
 ARCHER_TRAIN = 20  # amount of turns to train a new archer
 ARCHER_SPEED = 2  # distance covered in one turn by a running archer
 ARCHER_RANGE = 200  # maximum distance at which an archer can send an arrow
-ARCHER_REST = 100  # amount of turns of inactivity of an archer after shooting
-ARCHER_HEALTH = 25  # initial amount of HP of an archer
+ARCHER_REST = 30  # amount of turns of inactivity of an archer after shooting
+ARCHER_HEALTH = 100  # initial amount of HP of an archer
 ARCHER_HIT = 10  # damage caused by of an arrow shoot by an archer
 ARCHER_POS = BARRACKS_POS
 # Arrow
@@ -72,8 +72,8 @@ WALL_HEALTH = 1000  # maximum amount of HP af the wall
 # Tower
 TOWER_RANGE = 220  # maximum distance at which the tower can send an arrow
 TOWER_HIT = 5  # damage caused by of an arrow shoot by the tower
-TOWER_REST = 5  # amount of turns of inactivity of the tower after shooting
-TOWER_SHOOT_COOLDOWN = 20
+TOWER_REST = 30  # amount of turns of inactivity of the tower after shooting
+
 
 # Keybord commands
 PL1_WORKER_TRAIN = 'q'

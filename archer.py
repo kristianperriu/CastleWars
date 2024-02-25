@@ -42,10 +42,7 @@ archer2_run = [pygame.image.load('images/player2/bow/run-0.png'),
                pygame.image.load('images/player2/bow/run-11.png')]
 
 archer2_shoot = [pygame.image.load('images/player2/bow/shoot-0.png'),
-                 pygame.image.load('images/player2/bow/shoot-1.png'),
-                 # pygame.image.load('images/player2/bow/shoot-0.png'),
-                 # pygame.image.load('images/player2/bow/shoot-1.png')
-                 ]
+                 pygame.image.load('images/player2/bow/shoot-1.png')]
 
 archer2_dead = [pygame.image.load('images/player2/bow/fallen-0.png'),
                 pygame.image.load('images/player2/bow/fallen-1.png'),
@@ -107,6 +104,7 @@ class Archer(pygame.sprite.Sprite):
                     self.rect.x -= ARCHER_SPEED
             # shooting animation
             elif self.shoot:
+                self.unleash = False
                 self.tic += 1
                 if self.tic >= 6:
                     self.index += 0.2
