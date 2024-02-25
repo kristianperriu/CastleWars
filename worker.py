@@ -125,7 +125,7 @@ class Worker(pygame.sprite.Sprite):
             self.image = self.run_right_sprites[self.index]
 
         # Animation for Digging
-        if self.dig == True:
+        if self.dig:
             self.repair = False
             self.run_right = False
             self.run_left = False
@@ -138,7 +138,7 @@ class Worker(pygame.sprite.Sprite):
             self.image = self.dig_sprites[self.index]
 
         # Animation for Repairing
-        elif self.repair == True:
+        if self.repair:
             self.dig = False
             self.run_left = False
             self.run_right = False

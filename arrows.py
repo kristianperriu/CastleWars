@@ -34,7 +34,7 @@ class Tower_Arrow(pygame.sprite.Sprite):
         self.x_speed = x_speed
         self.y_speed = y_speed
         self.player = player
-        self.rect = self.image.get_rect(midbottom=(self.x, y))
+        self.rect = self.image.get_rect(center=(self.x, self.y))
 
     def update(self):
         if self.player == 1:
